@@ -76,6 +76,7 @@ class Server {
     private Main app;
     private RequestListenerThread thread;
     static JFrame jframe;
+    //커밋 & 푸시 테스트
     private String address = "127.0.0.1";
     private int port = 8080;
     public String error = "";
