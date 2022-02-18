@@ -1,6 +1,6 @@
 /**
  * This file is part of WebPrint
- * 
+ *
  * @author Michael Wallace
  *
  * Copyright (C) 2015 Michael Wallace, WallaceIT
@@ -94,10 +94,29 @@ var WebPrint = function (init, opt) {
     var wpready = false;
     function openPrintWindow() {
         wpready = false;
-        wpwindow = window.open("http://"+options.relayHost+":"+options.relayPort+"/printwindow", 'WebPrintService');
-        if (wpwindow)
-            wpwindow.blur();
-        window.focus();
+        if($("#ifmWebPrint").length > 0){
+            var ifm = $("#ifmWebPrint").attr("src", "http://"+options.relayHost+":"+options.relayPort+"/printwindow");
+
+            ifm.load(function(){
+                console.log("reload print...");
+                wpwindow =  document.getElementById( 'ifmWebPrint' ).contentWindow;
+            });
+        }else{
+            var ifm = $("<iframe>").attr({
+                "id": "ifmWebPrint",
+                "src": "http://"+options.relayHost+":"+options.relayPort+"/printwindow",
+            }).hide();
+
+            $("body").append(ifm);
+
+            wpwindow =  document.getElementById( 'ifmWebPrint' ).contentWindow;
+
+        }
+
+        // wpwindow = window.open("http://"+options.relayHost+":"+options.relayPort+"/printwindow", 'WebPrintService');
+        // if (wpwindow)
+        //     wpwindow.blur();
+        // window.focus();
     }
 
     this.checkConnection = function () {
