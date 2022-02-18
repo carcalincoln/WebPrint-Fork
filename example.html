@@ -21,7 +21,7 @@
     <title>WebPrint ESC/P Example</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="webprint.js"></script>
     <script>
         var populatePrinters = function(printers){
@@ -41,19 +41,23 @@
                 webprint.openPort($("#portlist option:first-child").val(), {baud:"9600", databits:"8", stopbits:"1", parity:"1", flow:"none"});
         };
 
-        webprint = new WebPrint(true, {
-            relayHost: "127.0.0.1",
-            relayPort: "8080",
-            listPrinterCallback: populatePrinters,
-            listPortsCallback: populatePorts,
-            readyCallback: function(){
-                webprint.requestPorts();
-                webprint.requestPrinters();
-                getESCPImageString("https://wallaceit.com.au/webprint/wallaceit_receipt_logo.png", function (imgdata) {
-                    imgData = imgdata;
-                    console.log("image loaded");
-                });
-            }
+        //숨김영역방식으로 처리하기 위해 호출은 로딩이 완료된 후에 처리한다.
+        $(function() {
+
+            webprint = new WebPrint(true, {
+                relayHost: "127.0.0.1",
+                relayPort: "8080",
+                listPrinterCallback: populatePrinters,
+                listPortsCallback: populatePorts,
+                readyCallback: function () {
+                    webprint.requestPorts();
+                    webprint.requestPrinters();
+                    getESCPImageString("https://wallaceit.com.au/webprint/wallaceit_receipt_logo.png", function (imgdata) {
+                        imgData = imgdata;
+                        console.log("image loaded");
+                    });
+                }
+            });
         });
 
         // ESC/P receipt generation
