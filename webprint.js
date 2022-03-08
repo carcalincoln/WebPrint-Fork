@@ -40,7 +40,7 @@ var WebPrint = function (init, opt) {
         var request = {a: "printraw", port: port, data: btoa(data)};
         sendAppletRequest(request);
     };
-    
+
     this.printTcp = function (data, socket) {
         var request = {a: "printraw", socket: socket, data: btoa(data)};
         sendAppletRequest(request);
@@ -77,7 +77,7 @@ var WebPrint = function (init, opt) {
         data.cookie = cookie;
         if (!wpwindow || wpwindow.closed || !wpready) {
             if (wpready){
-               openPrintWindow();
+                openPrintWindow();
             } else {
                 retry = true;
                 checkRelay();
@@ -178,12 +178,16 @@ var WebPrint = function (init, opt) {
                 deployAndroid();
                 return;
             }
-            var installFile="WebPrint.jar";
-            if (navigator.appVersion.indexOf("Win")!=-1) installFile="WebPrint_windows_1_1_1.exe";
-            if (navigator.appVersion.indexOf("Mac")!=-1) installFile="WebPrint_macos_1_1_1.dmg";
-            if (navigator.appVersion.indexOf("X11")!=-1) installFile="WebPrint_unix_1_1_1.sh";
-            if (navigator.appVersion.indexOf("Linux")!=-1) installFile="WebPrint_unix_1_1_1.sh";
-            window.open("https://content.wallaceit.com.au/webprint/"+installFile, '_blank');
+//                var installFile="WebPrint.jar";
+            if (navigator.appVersion.indexOf("Win")!=-1) {
+                var installFile="WebPrint_windows_1_1_3.exe";
+                window.open("https://my.letuseat.net/webprint/installer/"+installFile, '_blank');
+            }else{
+                // not support
+            }
+//            if (navigator.appVersion.indexOf("Mac")!=-1) installFile="WebPrint_macos_1_1_1.dmg";
+//            if (navigator.appVersion.indexOf("X11")!=-1) installFile="WebPrint_unix_1_1_1.sh";
+//            if (navigator.appVersion.indexOf("Linux")!=-1) installFile="WebPrint_unix_1_1_1.sh";
         }
     }
 
@@ -193,7 +197,7 @@ var WebPrint = function (init, opt) {
         } else {
             deployAndroidFirefox();
         }
-        //document.location.href = "intent://#Intent;scheme=webprint;package=au.com.wallaceit.webprint;S.browser_fallback_url=https%3A%2F%2Fwallaceit.com.au%2Fplaystore%2Fwebprint;end";
+        //document.location.href = "intent://#Intent;scheme=webprint;package=app.com.trizesolutions.webprint;S.browser_fallback_url=play.google.com;end";
     }
 
     function isAndroidIntentSupported() {
@@ -208,13 +212,14 @@ var WebPrint = function (init, opt) {
 
     function deployAndroidChrome(){
         // this link needs to be clicked by the user
-        document.body.innerHTML += '<div id="intent_link" style="position: fixed; top:40%; width: 120px; background-color: white; left:50%; margin-left: -60px; border: solid 2px rgb(75, 75, 75); font-family: Helvetica SansSerif sans-serif; text-align: center; padding: 5px;">' +
-            '<a onclick="window.location=\'intent://#Intent;scheme=webprint;package=au.com.wallaceit.webprint;S.browser_fallback_url=https%3A%2F%2Fwallaceit.com.au%2Fplaystore%2Fwebprint;end\'; document.getElementById(\'intent_link\').remove();">Click To Open WebPrint</a></div>';
+        var html = '<div id="intent_link" style="position: fixed; top:40%; width: 120px; background-color: white; left:50%; margin-left: -60px; border: solid 2px rgb(75, 75, 75); font-family: Helvetica SansSerif sans-serif; text-align: center; padding: 5px;">' +
+            '<a onclick="window.location=\'intent://trize#Intent;scheme=webprint;category=android.intent.category.BROWSABLE;package=com.trizesolutions.webprint;S.browser_fallback_url=https://play.google.com/store/apps/details?id=app.com.trizesolutions.webprint;end\'; document.getElementById(\'intent_link\').remove();">Click To Open WebPrint</a></div>';
+        document.body.innerHTML += html;
     }
 
     function deployAndroidFirefox() {
         var timeout = setTimeout(function() {
-            window.location = "https://wallaceit.com.au/playstore/webprint";
+           window.location = "https://play.google.com/store/apps/details?id=app.com.trizesolutions.webprint";
         }, 1000);
         window.addEventListener("pagehide", function(evt) {
             clearTimeout(timeout);
