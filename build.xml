@@ -7,7 +7,7 @@
 <!-- the Compile on Save feature is turned off for the project. -->
 <!-- You can turn off the Compile on Save (or Deploy on Save) setting -->
 <!-- in the project's Project Properties dialog box.-->
-<project name="WebPrint" default="default" basedir=".">
+<project name="WebPrint" default="default" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
     <description>Builds, tests, and runs the project WebPrint.</description>
     <import file="nbproject/build-impl.xml"/>
     <!--
@@ -86,7 +86,7 @@
 
     <property name="jar.file"       value="${dist.dir}/${ant.project.name}.jar"/>
 
-    <target name="-ivy-retrieve" xmlns:ivy="antlib:fr.jayasoft.ivy.ant">
+    <target name="-ivy-retrieve" xmlns:ivy="antlib:org.apache.ivy.ant">
         <ivy:settings file="ivysettings.xml" />
         <ivy:resolve/> <!-- Tell Ivy to resolve dependencies -->
         <ivy:retrieve/> <!-- Load dependencies to the project -->
@@ -106,7 +106,7 @@
         <delete dir="lib"/>
     </target>
     
-    <target name="clean-all" depends="clean" description="Additionally purge ivy cache" xmlns:ivy="antlib:fr.jayasoft.ivy.ant">
+    <target name="clean-all" depends="clean" description="Additionally purge ivy cache" xmlns:ivy="antlib:org.apache.ivy.ant">
         <ivy:cleancache/>
     </target>
     
@@ -131,7 +131,8 @@
 
         <jar destfile="${store.dir}/temp_final.jar" filesetmanifest="skip">
             <zipgroupfileset dir="${dist.dir}" includes="*.jar"/>
-            <zipgroupfileset dir="${dist.dir}/lib" includes="*.jar"/>
+<!--            <zipgroupfileset dir="${dist.dir}/lib" includes="*.jar"/>-->
+            <zipgroupfileset dir="${resources.dir}" includes="*.jar"/>
 
             <manifest>
                 <attribute name="Main-Class" value="${main.class}"/>
