@@ -46,12 +46,12 @@ var WebPrint = function (init, opt) {
         sendAppletRequest(request);
     };
 
-    this.printHtml = function (data, printer) {
+    this.printHtml = function (data, printer, pageSetting) {
         if (isAndroid){
             alert("HTML printing is not available in Android.");
             return;
         }
-        var request = {a: "printhtml", printer: printer, data: data};
+        var request = {a: "printhtml", printer: printer, data: data, pageSetting: pageSetting};
         sendAppletRequest(request);
     };
     /*

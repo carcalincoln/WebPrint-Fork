@@ -179,6 +179,7 @@ public class PrintRaw {
      * array.
      *
      * @return True if print job created successfull
+     *
      * @throws PrintException
      * @throws InterruptedException
      * @throws UnsupportedEncodingException
@@ -195,8 +196,7 @@ public class PrintRaw {
      * <code>end</code> are specified, prints the subarray of the original byte
      * array.
      *
-     * @param offset
-     * @param end
+     * @param data
      * @return
      * @throws PrintException
      * @throws InterruptedException

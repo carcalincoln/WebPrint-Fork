@@ -1,6 +1,6 @@
 /**
  * This file is part of WebPrint
- * 
+ *
  * @author Michael Wallace
  *
  * Copyright (C) 2015 Michael Wallace, WallaceIT
@@ -32,6 +32,8 @@ import java.nio.charset.IllegalCharsetNameException;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.collections.ObservableSet;
+import javafx.print.Printer;
 import javax.imageio.ImageIO;
 import javax.print.PrintException;
 import javax.print.PrintService;
@@ -62,6 +64,7 @@ public class PrintManager {
     public static final String VERSION = "1.8.0";
 
     private PrintService ps;
+    private Printer fxPrinter;
     private PrintRaw printRaw;
     private SerialIO serialIO;
     private PrintPostScript printPS;
@@ -123,7 +126,7 @@ public class PrintManager {
     }
 
     private void processParameters() {
-        jobName = "QZ-PRINT ___ Printing";
+        jobName = "WebPrint ___ Printing";
         allowMultiple = false;
         logFeaturesPS = false;
         alternatePrint = false;
@@ -160,14 +163,14 @@ public class PrintManager {
 
     public void appendHTMLFile(String url) throws IOException {
         try {
-            appendHTML(new String(FileUtilities.readRawFile(url), charset.name()));
+            setHTML(new String(FileUtilities.readRawFile(url), charset.name()));
         } catch (UnsupportedEncodingException ex) {
             Logger.getLogger(PrintManager.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
-    public void appendHTML(String html) {
-        getPrintHTML().append(html);
+    public void setHTML(String html) {
+        getPrintHTML().set(html);
     }
 
     /**
@@ -431,6 +434,7 @@ public class PrintManager {
 
     public void printToHost(String host, int port) throws IOException, NullPrintServiceException {
         if (!ByteUtilities.isBlank(host) && port > 0) {
+            logCommands(getPrintRaw()); //freshka 2022.04.07
             getPrintRaw().setOutputSocket(host, port);
             try {
                 getPrintRaw().printToSocket();
@@ -502,23 +506,23 @@ public class PrintManager {
      public double[] getPSMargin() {
      return psMargin;
      }
-    
+
      public void setPSMargin(int psMargin) {
      this.psMargin = new double[]{psMargin};
      }
-    
+
      public void setPSMargin(double psMargin) {
      this.psMargin = new double[]{psMargin};
      }
-    
+
      public void setPSMargin(int top, int left, int bottom, int right) {
      this.psMargin = new double[]{top, left, bottom, right};
      }
-    
+
      public void setPSMargin(double top, double left, double bottom, double right) {
      this.psMargin = new double[]{top, left, bottom, right};
      }*/
-    /*
+ /*
      // Due to applet security, can only be invoked by run() thread
      private String readRawFile() {
      String rawData = "";
@@ -631,16 +635,16 @@ public class PrintManager {
             } else {
                 getPrintRaw().append(s.getBytes(charset.name()));
             }
-            getPrintRaw().append(s.getBytes(charset.name()));
+            //getPrintRaw().append(s.getBytes(charset.name())); //freshka 2022.04.08
         } catch (UnsupportedEncodingException ex) {
             this.set(ex);
         }
     }
 
     /*
-     * Makes appending the unicode null character possible by appending 
+     * Makes appending the unicode null character possible by appending
      * the equivelant of <code>\x00</code> in JavaScript, which is syntatically
-     * invalid in JavaScript (no errors will be thrown, but Strings will be 
+     * invalid in JavaScript (no errors will be thrown, but Strings will be
      * terminated prematurely
      */
     public void appendNull() {
@@ -695,10 +699,19 @@ public class PrintManager {
     public void clear() {
         getPrintRaw().clear();
     }
-    
-    private boolean checkPrinterConnection(String printer){
-        if (this.printer==null || !this.printer.equals(printer)){
-            if (!setPrinter(printer)){
+
+    private boolean checkPrinterConnection(String printer) {
+        if (this.printer == null || !this.printer.equals(printer)) {
+            if (!setPrinter(printer)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean checkFxPrinterConnection(String printer) {
+        if (this.printer == null || !this.printer.equals(printer)) {
+            if (!setFxPrinter(printer)) {
                 return false;
             }
         }
@@ -706,7 +719,7 @@ public class PrintManager {
     }
 
     public boolean printHTML(String printer) {
-        if (!checkPrinterConnection(printer)){
+        if (!checkFxPrinterConnection(printer)) {
             return false;
         }
         try {
@@ -720,7 +733,7 @@ public class PrintManager {
     }
 
     public boolean printPS(String printer) {
-        if (!checkPrinterConnection(printer)){
+        if (!checkPrinterConnection(printer)) {
             return false;
         }
         try {
@@ -734,7 +747,7 @@ public class PrintManager {
     }
 
     public boolean printRaw(String printer) {
-        if (!checkPrinterConnection(printer)){
+        if (!checkPrinterConnection(printer)) {
             return false;
         }
         try {
@@ -775,7 +788,7 @@ public class PrintManager {
      * Creates the print service by iterating through printers until finding
      * matching printer containing "printerName" in its description
      *
-     * @param printerName
+     * @param printer
      * @return
      */
     public boolean setPrinter(String printer) {
@@ -785,6 +798,17 @@ public class PrintManager {
         }
         this.printer = printer;
         PrintManager.this.setPrintService(pservice);
+        return true;
+    }
+
+    public boolean setFxPrinter(String printerName) {
+        Printer printer = PrinterMatcher.findPrinter(printerName);
+        if (printer == null) {
+            return false;
+        }
+        this.fxPrinter = printer;
+        printHTML.setPrinter(this.fxPrinter);
+
         return true;
     }
 
@@ -826,7 +850,7 @@ public class PrintManager {
         try {
             // if port is not open or targering a different port, try to connect it
             if (!getSerialIO().isOpen() || !getSerialIO().getPortName().equals(portName)) {
-                if (!this.openPort(portName, false)){
+                if (!this.openPort(portName, false)) {
                     return false;
                 }
             }
@@ -893,9 +917,10 @@ public class PrintManager {
     }
 
     JSONObject portSettings = null;
+
     public boolean openPortWithProperties(String serialPortName, JSONObject portSettings) {
         this.portSettings = portSettings;
-        if (!this.openPort(serialPortName, false)){
+        if (!this.openPort(serialPortName, false)) {
             return false;
         }
         return true;
@@ -920,7 +945,7 @@ public class PrintManager {
 
     public boolean openPort(String serialPortName, boolean autoSetSerialProperties) {
         // check if port is already open
-        if (this.serialPortName != null){
+        if (this.serialPortName != null) {
             this.closeCurrentPort();
         }
         this.serialPortName = serialPortName;
@@ -928,11 +953,13 @@ public class PrintManager {
         try {
             System.out.println(serialPortName);
             getSerialIO().open(serialPortName);
-            if (portSettings!=null){
+            if (portSettings != null) {
                 getSerialIO().setProperties(portSettings.getString("baud"), portSettings.getString("databits"), portSettings.getString("stopbits"), portSettings.getString("parity"), portSettings.getString("flow"));
             } else {
                 if (autoSetSerialProperties) // Currently a Windows-only feature
+                {
                     getSerialIO().autoSetProperties();
+                }
             }
             return true;
         } catch (SerialPortException | JSONException | IOException | SerialException t) {
@@ -992,13 +1019,11 @@ public class PrintManager {
      * found for the specified MAC address. The format of these (IPv4 vs. IPv6)
      * may vary depending on the system.
      *
-     * @param macAddress
-     * @return
      */
     /* public String getIPAddresses(String macAddress) {
      return getNetworkHashMap().get(macAddress).getInetAddressesCSV();
      }*/
-    /*public String getIpAddresses() {
+ /*public String getIpAddresses() {
      return getIpAddresses();
      }*/
     public String getIP() {
@@ -1081,7 +1106,7 @@ public class PrintManager {
     /*  public String getIPV4Address() {
      return getNetworkHashMap().getLightestNetworkObject().getInet4Address();
      }
-    
+
      public String getIpV4Address() {
      return getIpV4Address();
      }*/
@@ -1101,7 +1126,7 @@ public class PrintManager {
      public String getIPV6Address() {
      return getNetworkHashMap().getLightestNetworkObject().getInet6Address();
      }
-    
+
      public String getIpV6Address() {
      return getIpV4Address();
      }*/
@@ -1135,11 +1160,6 @@ public class PrintManager {
         return VERSION;
     }
 
-    /**
-     * Sets the time the listener thread will wait between actions
-     *
-     * @param sleep
-     */
     public String getEndOfDocument() {
         return endOfDocument;
     }
@@ -1152,7 +1172,7 @@ public class PrintManager {
         setPrintService(PrintServiceMatcher.getPrinterList()[index]);
         LogIt.log("Printer set to index: " + index + ",  Name: " + ps.getName());
 
-        //PrinterState state = (PrinterState)this.ps.getAttribute(PrinterState.class); 
+        //PrinterState state = (PrinterState)this.ps.getAttribute(PrinterState.class);
         //return state == PrinterState.IDLE || state == PrinterState.PROCESSING;
     }
 
@@ -1210,7 +1230,7 @@ public class PrintManager {
     }
 
     private void logStart() {
-        LogIt.log("QZ-PRINT " + VERSION);
+        LogIt.log("WebPrint " + VERSION);
         LogIt.log("===== APPLET STARTED =====");
     }
 
@@ -1401,4 +1421,7 @@ public class PrintManager {
                 + paperSize.getHeight() + paperSize.getUnitDescription());
     }
 
+    public void setPrintPageSetting(PrintPageSetting pageSetting) {
+        getPrintHTML().setPrintPageSetting(pageSetting);
+    }
 }

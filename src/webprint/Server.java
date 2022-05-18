@@ -43,6 +43,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.HttpServerConnection;
 import org.apache.http.MethodNotSupportedException;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.DefaultHttpResponseFactory;
@@ -66,6 +67,8 @@ import qz.PrintServiceMatcher;
 import qz.exception.NullPrintServiceException;
 import qz.json.JSONArray;
 import qz.json.JSONObject;
+import qz.PrintRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -203,19 +206,24 @@ class Server {
                     // Get request and parse JSON
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     ((HttpEntityEnclosingRequest) request).getEntity().writeTo(stream);
-                    String entityContent = stream.toString();
+                    String entityContent = stream.toString("UTF-8");
                     System.out.println(entityContent);
+
                     // parse json and get request
                     JSONObject jrequest = new JSONObject(entityContent);
-                    String action = jrequest.getString("a");
+                    // Jackson 으로 처리
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    PrintRequest printRequest = objectMapper.readValue(entityContent, PrintRequest.class);
+                    String action = printRequest.getA();
+
                     // Perform authentication using provided cookie & origin
-                    if (!jrequest.has("origin")) {
+                    if (null == printRequest.getOrigin()) {
                         responseJson.put("error", "Invalid authentication credentials provided.");
                     } else {
-                        String origin = jrequest.getString("origin");
+                        String origin = printRequest.getOrigin();
                         String cookie = "";
-                        if (jrequest.has("cookie")) {
-                            cookie = jrequest.getString("cookie");
+                        if (null != printRequest.getCookie()) {
+                            cookie = printRequest.getCookie();
                         }
                         if (action.equals("init")) {
                             if (!app.acl.isAllowed(origin, cookie)) {
@@ -250,38 +258,36 @@ class Server {
                                     responseJson.put("ports", jportArray);
                                 }
                                 if (action.equals("openport")) {
-                                    if (!pManager.openPortWithProperties(jrequest.getString("port"), jrequest.getJSONObject("settings"))) {
+                                    if (!pManager.openPortWithProperties(printRequest.getPort(), jrequest.getJSONObject("settings"))) {
                                         responseJson.put("error", "Could not open serial port: " + pManager.getException());
                                     }
                                 }
                                 if (action.equals("printraw")) {
-                                    if (jrequest.has("printer")) {
-                                        pManager.append64(jrequest.getString("data"));
-                                        if (!pManager.printRaw(jrequest.getString("printer"))) {
+                                    if (null != printRequest.getPrinter()) {
+                                        pManager.append64(printRequest.getData());
+                                        if (!pManager.printRaw(printRequest.getPrinter())) {
                                             responseJson.put("error", "Failed to print: " + pManager.getException());
                                         }
-                                    } else if (jrequest.has("port")) {
-                                        if (!pManager.send(jrequest.getString("port"), jrequest.getString("data"))) {
-                                            //System.out.println(jrequest.getString("port"));
+                                    } else if (null != printRequest.getPort()) {
+                                        if (!pManager.send(printRequest.getPort(), printRequest.getData())) {
                                             responseJson.put("error", "Failed to print: " + pManager.getException());
                                         }
                                     } else if (jrequest.has("socket")) {
-                                        pManager.append64(jrequest.getString("data"));
+                                        pManager.append64(printRequest.getData());
                                         String[] parts = jrequest.getString("socket").split(":");
                                         try {
                                             pManager.printToHost(parts[0], parts[1]);
                                         } catch (NumberFormatException | IOException | NullPrintServiceException ex) {
                                             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                                                //System.out.println(jrequest.getString("socket"));
                                             responseJson.put("error", "Failed to print: " + ex.getMessage());
-                                        }    
+                                        }
                                     } else {
                                         responseJson.put("error", "No printer specified in the request.");
                                     }
-                                }
-                                if (action.equals("printhtml")) {
-                                    pManager.appendHTML(jrequest.getString("data"));
-                                    if (!pManager.printHTML(jrequest.getString("printer"))) {
+                                } else if (action.equals("printhtml")) {
+                                    pManager.setPrintPageSetting(printRequest.getPageSetting());
+                                    pManager.setHTML(printRequest.getData());
+                                    if (!pManager.printHTML(printRequest.getPrinter())) {
                                         responseJson.put("error", "Failed to print: " + pManager.getException());
                                     }
                                 }
@@ -300,7 +306,7 @@ class Server {
             response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
             response.addHeader("Access-Control-Max-Age", "3600");
             response.addHeader("Access-Control-Allow-Headers", "x-requested-with");
-            StringEntity en = new StringEntity(responseBody);
+            StringEntity en = new StringEntity(responseBody, ContentType.create("text/html", "UTF-8"));
 
             response.setEntity(en);
 
