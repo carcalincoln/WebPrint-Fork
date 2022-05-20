@@ -34,6 +34,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.collections.ObservableSet;
 import javafx.print.Printer;
+
+import javax.bluetooth.RemoteDevice;
 import javax.imageio.ImageIO;
 import javax.print.PrintException;
 import javax.print.PrintService;
@@ -466,6 +468,23 @@ public class PrintManager {
             }
         } else {
             this.set(new NullPrintServiceException("Blank output path supplied"));
+            this.clear();
+        }
+    }
+
+    public void printToBluetooth(RemoteDevice printer) {
+        if (!ByteUtilities.isBlank(printer)) {
+            logCommands(getPrintRaw()); //freshka 2022.04.07
+            try {
+                getPrintRaw().setBluetoothPrinter(printer);
+                getPrintRaw().printToBluetooth();
+                this.clear();
+            } catch (Exception e) {
+                this.set(e);
+                this.clear();
+            }
+        } else {
+            this.set(new NullPrintServiceException("Invalid printer specified."));
             this.clear();
         }
     }

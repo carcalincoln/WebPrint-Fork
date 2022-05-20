@@ -29,10 +29,12 @@ import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.bluetooth.RemoteDevice;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import org.apache.http.ConnectionClosedException;
@@ -62,6 +64,7 @@ import org.apache.http.protocol.ResponseConnControl;
 import org.apache.http.protocol.ResponseContent;
 import org.apache.http.protocol.ResponseDate;
 import org.apache.http.protocol.ResponseServer;
+import qz.BluetoothUtilities;
 import qz.PrintManager;
 import qz.PrintServiceMatcher;
 import qz.exception.NullPrintServiceException;
@@ -171,6 +174,8 @@ class Server {
         System.out.println("Server shutdown");
     }
 
+    private HashMap<String, RemoteDevice> bluetoothPrinters;
+
     // Server threads
     class HttpHandler implements HttpRequestHandler {
 
@@ -247,10 +252,25 @@ class Server {
                         } else {
                             if (app.acl.isAllowed(origin, cookie)) {
                                 if (action.equals("listprinters")) {
+                                    JSONArray deviceArr = new JSONArray();
                                     PrintServiceMatcher.getPrinterArray(true);
-                                    String[] printerArray = PrintServiceMatcher.getPrinterListing().split(",");
-                                    JSONArray jprintArray = new JSONArray(printerArray);
-                                    responseJson.put("printers", jprintArray);
+                                    String deviceListStr = PrintServiceMatcher.getPrinterListing();
+                                    if (!"".equals(deviceListStr) || deviceListStr != null) {
+                                        String[] printerArray = deviceListStr.split(",");
+                                        for (String s : printerArray) {
+                                            deviceArr.put(s);
+                                        }
+                                    }
+                                    try {
+                                        //bluetoothPrinters = BluetoothUtilities.discoveryBluetoothDevices();
+                                        bluetoothPrinters = BluetoothUtilities.refreshBluetoothDevices();
+                                        for (String s : bluetoothPrinters.keySet()) {
+                                            deviceArr.put(s);
+                                        }
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                    responseJson.put("printers", deviceArr);
                                 }
                                 if (action.equals("listports")) {
                                     String[] portArray = pManager.findPorts();
@@ -263,10 +283,22 @@ class Server {
                                     }
                                 }
                                 if (action.equals("printraw")) {
-                                    if (null != printRequest.getPrinter()) {
+                                    String printerName = printRequest.getPrinter();
+                                    if (null != printerName) {
                                         pManager.append64(printRequest.getData());
-                                        if (!pManager.printRaw(printRequest.getPrinter())) {
-                                            responseJson.put("error", "Failed to print: " + pManager.getException());
+                                        if (bluetoothPrinters.containsKey(printerName)) {
+                                            RemoteDevice printer = bluetoothPrinters.get(printerName);
+                                            try {
+                                                pManager.printToBluetooth(printer);
+                                            } catch (Exception ex) {
+                                                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                                                responseJson.put("error", "Failed to print: " + ex.getMessage());
+                                            }
+                                        }
+                                        else {
+                                            if (!pManager.printRaw(printerName)) {
+                                                responseJson.put("error", "Failed to print: " + pManager.getException());
+                                            }
                                         }
                                     } else if (null != printRequest.getPort()) {
                                         if (!pManager.send(printRequest.getPort(), printRequest.getData())) {

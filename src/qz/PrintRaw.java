@@ -40,6 +40,9 @@ import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
+import javax.bluetooth.RemoteDevice;
+import javax.microedition.io.Connector;
+import javax.microedition.io.StreamConnection;
 import javax.print.DocFlavor;
 import javax.print.DocPrintJob;
 import javax.print.PrintException;
@@ -77,6 +80,7 @@ public class PrintRaw {
     private AtomicReference<String> socketHost = new AtomicReference<String>(null);
     private AtomicReference<Integer> socketPort = new AtomicReference<Integer>(null);
     private final AtomicBoolean alternatePrint = new AtomicBoolean(false);
+    private AtomicReference<RemoteDevice> bluetoothPrinter = new AtomicReference<RemoteDevice>(null);
 
     public PrintRaw() {
     }
@@ -100,7 +104,7 @@ public class PrintRaw {
      * Constructor added version 1.4.6 for lpr raw compatibility with Lion
      *
      * @param ps
-     * @param rawCmds
+     * @param printString
      * @param charset
      * @param alternatePrint
      */
@@ -138,6 +142,13 @@ public class PrintRaw {
         this.socketPort.set(port);
     }
 
+
+    public void setBluetoothPrinter(RemoteDevice bluetoothPrinter) {
+        this.bluetoothPrinter.set(bluetoothPrinter);
+    }
+
+
+
     /*public boolean print(String rawCmds) throws PrintException, InterruptedException, UnsupportedEncodingException {
      this.set(rawCmds);
      return print();
@@ -170,6 +181,20 @@ public class PrintRaw {
         OutputStream out = new FileOutputStream(outputPath.get());
         out.write(this.getRawCmds().getByteArray());
         out.close();
+        return true;
+    }
+
+    public boolean printToBluetooth() throws PrintException, IOException {
+        RemoteDevice remoteDevice = bluetoothPrinter.get();
+        LogIt.log("Printing to bluetoothPrinter: " + remoteDevice.getFriendlyName(false));
+        String url = "btspp://"+remoteDevice.getBluetoothAddress()+":1;authenticate=false;encrypt=false;master=false";
+        StreamConnection connection = (StreamConnection) Connector.open(url);
+        DataOutputStream out = connection.openDataOutputStream();
+        out.write(getRawCmds().getByteArray());
+        out.flush();
+        out.close();
+        connection.close();
+        bluetoothPrinter = new AtomicReference<>(null);
         return true;
     }
 
@@ -345,7 +370,7 @@ public class PrintRaw {
      * Convenience method for RawPrint constructor and print method
      *
      * @param ps The PrintService object
-     * @param commands The RAW commands to be sent directly to the printer
+     * @param rawCmds The RAW commands to be sent directly to the printer
      * @return True if print job created successfull
      * @throws javax.print.PrintException
      */
@@ -516,7 +541,7 @@ public class PrintRaw {
      * Iterates through byte array finding matches of a sublist of bytes.
      * Returns an array of positions. TODO: Make this natively Iterable.
      *
-     * @param array
+     * @param s
      * @return
      */
     //public int[] indicesOfSublist(byte[] sublist) {
