@@ -7,6 +7,7 @@ import javax.bluetooth.UUID;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.logging.Level;
 
 public class BluetoothUtilities {
 
@@ -16,11 +17,28 @@ public class BluetoothUtilities {
      */
     public static String getPrinterListing() throws IOException {
         String printerListing = "";
-        LocalDevice localDevice = LocalDevice.getLocalDevice();
+        LocalDevice localDevice;
+        try {
+            localDevice = LocalDevice.getLocalDevice();
+        } catch (BluetoothStateException e) {
+            e.printStackTrace();
+            LogIt.log(Level.SEVERE, "Can't get local bluetooth device", e);
+            return printerListing;
+        }
         RemoteDevice[] remoteDevices = localDevice.getDiscoveryAgent().retrieveDevices(DiscoveryAgent.PREKNOWN);
+        if (remoteDevices == null) {
+            return printerListing;
+        }
         for (int i = 0; i < remoteDevices.length; i++) {
             RemoteDevice remoteDevice = remoteDevices[i];
-            String deviceName = remoteDevice.getFriendlyName(false).trim();
+            String deviceName;
+            try {
+                deviceName = remoteDevice.getFriendlyName(false).trim();
+            } catch (IOException e) {
+                e.printStackTrace();
+                LogIt.log(Level.SEVERE, "Can't get remote bluetooth device", e);
+                return printerListing;
+            }
             printerListing  = printerListing  + deviceName;
             if (i != (remoteDevices.length - 1)) {
                 printerListing  = printerListing  + ",";
@@ -33,12 +51,29 @@ public class BluetoothUtilities {
     }
 
 
-    public static HashMap<String, RemoteDevice> refreshBluetoothDevices() throws IOException, InterruptedException {
+    public static HashMap<String, RemoteDevice> refreshBluetoothDevices() {
         HashMap<String, RemoteDevice> bluetoothPrinters = new HashMap<>();
-        LocalDevice localDevice = LocalDevice.getLocalDevice();
+        LocalDevice localDevice;
+        try {
+            localDevice = LocalDevice.getLocalDevice();
+        } catch (BluetoothStateException e) {
+            e.printStackTrace();
+            LogIt.log(Level.SEVERE, "Can't get local bluetooth device", e);
+            return bluetoothPrinters;
+        }
         RemoteDevice[] remoteDevices = localDevice.getDiscoveryAgent().retrieveDevices(DiscoveryAgent.PREKNOWN);
+        if (remoteDevices == null) {
+            return bluetoothPrinters;
+        }
         for (RemoteDevice btDevice : remoteDevices) {
-            String deviceName = btDevice.getFriendlyName(false).trim();
+            String deviceName;
+            try {
+                deviceName = btDevice.getFriendlyName(false).trim();
+            } catch (IOException e) {
+                e.printStackTrace();
+                LogIt.log(Level.SEVERE, "Can't get remote bluetooth device", e);
+                return bluetoothPrinters;
+            }
             bluetoothPrinters.put(deviceName, btDevice);
             System.out.println("Device " + btDevice.getBluetoothAddress() + " found");
             System.out.println("Bluetooth Printer added to list: " + deviceName);
@@ -49,7 +84,7 @@ public class BluetoothUtilities {
         return bluetoothPrinters;
     }
 
-    public static HashMap<String, RemoteDevice> discoveryBluetoothDevices() throws IOException, InterruptedException {
+    public static HashMap<String, RemoteDevice> discoveryBluetoothDevices() throws IOException {
 
         final HashMap<String, RemoteDevice> bluetoothPrinters = new HashMap<>();
         final Object inquiryCompletedEvent = new Object();
@@ -90,7 +125,13 @@ public class BluetoothUtilities {
             boolean started = LocalDevice.getLocalDevice().getDiscoveryAgent().startInquiry(DiscoveryAgent.GIAC, listener);
             if (started) {
                 System.out.println("wait for device inquiry to complete...");
-                inquiryCompletedEvent.wait();
+                try {
+                    inquiryCompletedEvent.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    LogIt.log(Level.SEVERE, "Error wait for device inquiry to complete...", e);
+                    return bluetoothPrinters;
+                }
                 System.out.println(bluetoothPrinters.size() +  " device(s) found");
             }
         }

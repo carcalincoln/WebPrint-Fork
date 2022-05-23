@@ -261,14 +261,9 @@ class Server {
                                             deviceArr.put(s);
                                         }
                                     }
-                                    try {
-                                        //bluetoothPrinters = BluetoothUtilities.discoveryBluetoothDevices();
-                                        bluetoothPrinters = BluetoothUtilities.refreshBluetoothDevices();
-                                        for (String s : bluetoothPrinters.keySet()) {
-                                            deviceArr.put(s);
-                                        }
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
+                                    bluetoothPrinters = BluetoothUtilities.refreshBluetoothDevices();
+                                    for (String s : bluetoothPrinters.keySet()) {
+                                        deviceArr.put(s);
                                     }
                                     responseJson.put("printers", deviceArr);
                                 }
