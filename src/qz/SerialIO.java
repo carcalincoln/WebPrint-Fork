@@ -1,6 +1,7 @@
 package qz;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.logging.Level;
 import jssc.SerialPort;
 import jssc.SerialPortEvent;
@@ -295,10 +296,14 @@ public class SerialIO {
      * Applies the port parameters and writes the buffered data to the serial port
      * @throws SerialPortException 
      */
-    public void send() throws SerialPortException {
+    public void send(String charsetName) throws SerialPortException {
         port.setParams(baudRate, dataBits, stopBits, parity);
         port.setFlowControlMode(flowControl);
-        LogIt.log("Sending data to [" + portName + "]:\r\n\r\n" + new String(getInputBuffer().getByteArray()) + "\r\n\r\n");
+        try {
+            LogIt.log("Sending data to [" + portName + "]:\r\n\r\n" + new String(getInputBuffer().getByteArray(), charsetName) + "\r\n\r\n");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         port.writeBytes(getInputBuffer().getByteArray());
         getInputBuffer().clear();
     }

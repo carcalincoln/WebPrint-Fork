@@ -75,6 +75,7 @@ public class PrintRaw {
     private final AtomicReference<ByteArrayBuilder> rawCmds = new AtomicReference<ByteArrayBuilder>(null);
     private final AtomicBoolean isFinished = new AtomicBoolean(false);
     private final AtomicReference<Charset> charset = new AtomicReference<Charset>(Charset.defaultCharset());
+    //private final AtomicReference<Charset> charset = new AtomicReference<Charset>(Charset.forName("UTF-8"));
     private final AtomicReference<String> jobName = new AtomicReference<String>("QZ-PRINT Raw Printing");
     private final AtomicReference<String> outputPath = new AtomicReference<String>(null);
     private AtomicReference<String> socketHost = new AtomicReference<String>(null);

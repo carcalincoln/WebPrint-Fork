@@ -89,7 +89,16 @@ public class PrintManager {
     private String xmlTag;
     private String printer;
     private Integer copies;
+
+    //freshka 2022.07.07
     private Charset charset = Charset.defaultCharset();
+    //private Charset charset = Charset.forName("UTF-8");
+    //private Charset charset = Charset.forName("EUC-KR"); //KS C 5601, EUC encoding, Korean
+    //private Charset charset = Charset.forName("x-IBM874"); //IBM Thai
+    //private Charset charset = Charset.forName("x-windows-874"); //Windows Thai
+    //private Charset charset = Charset.forName("IBM-Thai"); //IBM Thailand extended SBCS
+    //private Charset charset = Charset.forName("windows-1258"); //VIETNAM
+
     private int documentsPerSpool = 0;
     private String endOfDocument;
 
@@ -157,7 +166,10 @@ public class PrintManager {
 
     public void append64(String base64) {
         try {
-            getPrintRaw().append(Base64.decode(base64));
+            //freshka 2022.07.07
+            //getPrintRaw().append(Base64.decode(base64));
+            String ss = new String(Base64.decode(base64));
+            getPrintRaw().append(ss.getBytes(charset.name()));
         } catch (IOException e) {
             set(e);
         }
@@ -874,11 +886,15 @@ public class PrintManager {
                 }
             }
             if (getSerialIO().getPortName().equals(portName)) {
-                //getSerialIO().append(data.getBytes(charset.name()));
-                getSerialIO().append(Base64.decode(data));
+                //freshka 2022.07.14
+                //getSerialIO().append(Base64.decode(data));
+                String ss = new String(Base64.decode(data));
+                getSerialIO().append(ss.getBytes(charset.name()));
                 try {
                     logCommands(new String(getSerialIO().getInputBuffer().getByteArray(), charset.name()));
-                    getSerialIO().send();
+                    //freshka 2022.07.14
+                    //getSerialIO().send();
+                    getSerialIO().send(charset.name());
                 } catch (Throwable t) {
                     this.set(t);
                     return false;
@@ -1337,6 +1353,9 @@ public class PrintManager {
      */
     public void setEncoding(String charset) {
         // Example:  Charset.forName("US-ASCII");
+        if (charset == null) {
+            return;
+        }
         System.out.println("Default charset encoding: " + Charset.defaultCharset().name());
         try {
             this.charset = Charset.forName(charset);

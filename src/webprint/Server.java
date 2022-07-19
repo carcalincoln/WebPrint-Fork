@@ -219,6 +219,13 @@ class Server {
                     // Jackson 으로 처리
                     ObjectMapper objectMapper = new ObjectMapper();
                     PrintRequest printRequest = objectMapper.readValue(entityContent, PrintRequest.class);
+
+                    // 한글 처리 freshka 2022.07.14
+                    String encoding = printRequest.getEncoding();
+                    if (null != encoding) {
+                        pManager.setEncoding(encoding);
+                    }
+
                     String action = printRequest.getA();
 
                     // Perform authentication using provided cookie & origin

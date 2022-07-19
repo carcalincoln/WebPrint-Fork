@@ -21,6 +21,7 @@ public class PrintRequest {
     private String origin;
     private String cookie;
     private String port;
+    private String encoding;
 
     public String getA() {
         return a;
@@ -77,5 +78,14 @@ public class PrintRequest {
     public void setPort(String port) {
         this.port = port;
     }
+
+    public String getEncoding() {
+        return encoding;
+    }
+
+    public void setEncoding(String encoding) {
+        this.encoding = encoding;
+    }
+
 
 }
