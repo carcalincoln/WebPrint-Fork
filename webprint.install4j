@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="9.0.6" transformSequenceNumber="9">
-  <directoryPresets config="/Users/ohsungjae/Documents/work_project/tunkey/trize/WebPrint-Fork" />
-  <application name="WebPrint" applicationId="1991-8205-8272-6683" mediaDir="/Users/ohsungjae/Documents/work_project/tunkey/trize/WebPrint-Fork/installer" shortName="WebPrint" publisher="TRIZE SOLUTIONS" version="1.1.3" macVolumeId="f3bab2ad18c8934d" javaMinVersion="1.8" jdkMode="runtimeJre">
+  <directoryPresets config="D:/TRIZE/projects/TABLE_ORDER/workspace_git/remote/WebPrint-Fork" />
+  <application name="WebPrint" applicationId="1991-8205-8272-6683" mediaDir="D:/TRIZE/projects/TABLE_ORDER/workspace_git/remote/WebPrint-Fork/installer" shortName="WebPrint" publisher="TRIZE SOLUTIONS" version="1.1.5" macVolumeId="f3bab2ad18c8934d" javaMinVersion="1.8" jdkMode="runtimeJre">
     <jreBundles jdkProviderId="AdoptOpenJDK" release="8/jdk8u322-b06" />
   </application>
   <files preserveSymlinks="false">
@@ -13,24 +13,24 @@
       <mountPoint id="81" root="80" location="WebPrint" />
     </mountPoints>
     <entries>
-      <fileEntry mountPoint="25" file="/Users/ohsungjae/Documents/work_project/tunkey/trize/WebPrint-Fork/store/WebPrint.jar" />
-      <fileEntry mountPoint="25" file="/Users/ohsungjae/Documents/work_project/tunkey/trize/WebPrint-Fork/src/webprint/img/webprinticonsmall.png" />
-      <fileEntry mountPoint="81" file="/Users/ohsungjae/Documents/work_project/tunkey/trize/WebPrint-Fork/webprint.config" />
-      <fileEntry mountPoint="81" file="/Users/ohsungjae/Documents/work_project/tunkey/trize/WebPrint-Fork/webprint_acl.json" />
+      <fileEntry mountPoint="25" file="D:/TRIZE/projects/TABLE_ORDER/workspace_git/remote/WebPrint-Fork/store/WebPrint.jar" />
+      <fileEntry mountPoint="25" file="D:/TRIZE/projects/TABLE_ORDER/workspace_git/remote/WebPrint-Fork/src/webprint/img/webprinticonsmall.png" />
+      <fileEntry mountPoint="81" file="D:/TRIZE/projects/TABLE_ORDER/workspace_git/remote/WebPrint-Fork/webprint.config" />
+      <fileEntry mountPoint="81" file="D:/TRIZE/projects/TABLE_ORDER/workspace_git/remote/WebPrint-Fork/webprint_acl.json" />
     </entries>
   </files>
   <launchers>
     <launcher name="WebPrint" id="26">
       <executable name="WebPrint" iconSet="true" executableDir="." executableMode="gui" singleInstance="true" dpiAware="false" />
-      <java mainClass="webprint.Main">
+      <java mainClass="webprint.Main" vmParameters="-Dfile.encoding=utf8">
         <classPath>
           <archive location="WebPrint.jar" failOnError="false" />
         </classPath>
       </java>
       <macStaticAssociationActions mode="selected" />
       <iconImageFiles>
-        <file path="/Users/ohsungjae/Documents/work_project/tunkey/trize/WebPrint-Fork/src/webprint/img/webprinticon.png" />
-        <file path="/Users/ohsungjae/Documents/work_project/tunkey/trize/WebPrint-Fork/webprinticon-128.png" />
+        <file path="D:/TRIZE/projects/TABLE_ORDER/workspace_git/remote/WebPrint-Fork/src/webprint/img/webprinticon.png" />
+        <file path="D:/TRIZE/projects/TABLE_ORDER/workspace_git/remote/WebPrint-Fork/webprinticon-128.png" />
       </iconImageFiles>
     </launcher>
   </launchers>
