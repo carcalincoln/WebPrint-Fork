@@ -27,31 +27,49 @@ var WebPrint = function (init, opt) {
 
     $.extend(options, opt);
 
-    this.printRaw = function (data, printer) {
-        var request = {a: "printraw", printer: printer, data: btoa(data)};
+    this.printRaw = function (data, printer, encoding) {
+        var request;
+        if (encoding) {
+            request = {a: "printraw", printer: printer, data: BASE64.encode(data), encoding: encoding};
+        }
+        else {
+            request = {a: "printraw", printer: printer, data: btoa(data)};
+        }
         sendAppletRequest(request);
     };
 
-    this.printSerial = function (data, port) {
+    this.printSerial = function (data, port, encoding) {
         if (isAndroid){
             alert("Serial port printing is not available in Android.");
             return;
         }
-        var request = {a: "printraw", port: port, data: btoa(data)};
+        var request;
+        if (encoding) {
+            request = {a: "printraw", port: port, data: BASE64.encode(data), encoding: encoding};
+        }
+        else {
+            request = {a: "printraw", port: port, data: btoa(data)};
+        }
         sendAppletRequest(request);
     };
 
-    this.printTcp = function (data, socket) {
-        var request = {a: "printraw", socket: socket, data: btoa(data)};
+    this.printTcp = function (data, socket, encoding) {
+        var request;
+        if (encoding) {
+            request = {a: "printraw", socket: socket, data: BASE64.encode(data), encoding: encoding};
+        }
+        else {
+            request = {a: "printraw", socket: socket, data: btoa(data)};
+        }
         sendAppletRequest(request);
     };
 
-    this.printHtml = function (data, printer, pageSetting) {
+    this.printHtml = function (data, printer, pageSetting, encoding) {
         if (isAndroid){
             alert("HTML printing is not available in Android.");
             return;
         }
-        var request = {a: "printhtml", printer: printer, data: data, pageSetting: pageSetting};
+        var request = {a: "printhtml", printer: printer, data: data, pageSetting: pageSetting, encoding: encoding};
         sendAppletRequest(request);
     };
     /*

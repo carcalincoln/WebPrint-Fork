@@ -22,7 +22,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
-    <script src="webprint.js"></script>
+    <script src="js/webprint.js"></script>
+    <script src="js/base64.js"></script>
     <script>
         var populatePrinters = function(printers){
             var printerlist = $("#printerlist");
@@ -52,10 +53,11 @@
                 readyCallback: function () {
                     webprint.requestPorts();
                     webprint.requestPrinters();
-                    getESCPImageString("https://wallaceit.com.au/webprint/wallaceit_receipt_logo.png", function (imgdata) {
+                    //getESCPImageString("http://localhost:63342/WebPrint-Fork/webprinticon-128.png", function (imgdata) {
+                    /*getESCPImageString("https://wallaceit.com.au/webprint/wallaceit_receipt_logo.png", function (imgdata) {
                         imgData = imgdata;
                         console.log("image loaded");
-                    });
+                    });*/
                 }
             });
         });
@@ -64,10 +66,13 @@
         var imgData = '';
         getEscSample = function(cut, image){
             var data = '';
-            if (image)
-                data+= imgData; // add the logo
+            //if (image)
+            //    data+= imgData; // add the logo
             data+= esc_init + esc_a_c + esc_double + 'Heading Text' + "\n" + font_reset; // heading centered example
             data+= esc_bold_on + 'bold text' + "\n"  + font_reset; // bold example
+            data+= esc_normal + 'size normal text' + "\n"  + font_reset; // size normal
+            data+= esc_small + 'size small text' + "\n"  + font_reset; // size small
+            data+= esc_init + esc_normal + 'size normal text' + "\n"  + font_reset; // size normal
             data+= 'standard text' + "\n"; // normal
             data+= esc_a_r + 'right aligned text' + "\n" + font_reset; // right aligned
             data+= esc_a_l + esc_ul_on + 'underlined text' + "\n" + font_reset; // underlined
@@ -79,12 +84,17 @@
             if (cut)
                 data+= "\n\n\n\n" + gs_cut + "\r";
 
+            console.log(data);
             return data;
         };
 
         var esc_init = "\x1B" + "\x40"; // initialize printer
         var esc_p = "\x1B" + "\x70" + "\x30"; // open drawer
-        var gs_cut = "\x1D" + "\x56" + "\x4E"; // cut paper
+
+        //var gs_cut = "\x1D" + "\x56" + "\x4E"; // cut paper
+        var gs_cut = "\x1D" + "\x56" + "\x01"; // cut paper
+        //var gs_cut = "\x1B" + "\x69"; // cut paper (left)
+
         var esc_a_l = "\x1B" + "\x61" + "\x30"; // align left
         var esc_a_c = "\x1B" + "\x61" + "\x31"; // align center
         var esc_a_r = "\x1B" + "\x61" + "\x32"; // align right
@@ -93,6 +103,10 @@
         var esc_ul_on = "\x1B" + "\x2D" + "\x31"; // underline on
         var esc_bold_on = "\x1B" + "\x45" + "\x31"; // emphasis on
         var esc_bold_off = "\x1B" + "\x45" + "\x30"; // emphasis off
+
+        var esc_normal = "\x1B" + "\x4D" + "\x00"; // size normal
+        var esc_small = "\x1B" + "\x4D" + "\x01"; // size small
+
 
         function getEscTableRow(leftstr, rightstr, bold, underline) {
             var pad = "";
@@ -207,6 +221,316 @@
             }
             return s;
         }
+
+        getHtmlSample = function(cut, image){
+            var data = '';
+            data+= "<HTML><body>";
+            data+= "<h2>An Unordered HTML List</h2>";
+            data+= "<ul>";
+            data+= "<li>Coffee</li>";
+            data+= "<li>Tea</li>";
+            data+= "<li>Milk</li>";
+            data+= "</ul>";
+            data+= "<h2>An Ordered HTML List</h2>";
+            data+= "<ol>";
+            data+= "<li>Coffee</li>";
+            data+= "<li>Tea</li>";
+            data+= "<li>Milk</li>";
+            data+= "</ol> ";
+            data+= "</body></HTML>";
+            // cut the ticket
+            /*if (cut)
+                data+= "\n\n\n\n" + gs_cut + "\r";*/
+
+
+            /*data+= "<HTML>";
+            data+= "<head>";
+            data+= "<style type='text/css'>";
+            data+= "  @page{";
+            data+= "    margin-left: 0px;";
+            data+= "    margin-right: 0px;";
+            data+= "    margin-top: 0px;";
+            data+= "    margin-bottom: 0px;";
+            data+= "}";
+            data+= "h1{";
+            data+= "    font-size: 1.5em;";
+            data+= "    color: #000;";
+            data+= "}";
+            data+= "h2{font-size: .9em;}";
+            data+= "h3{";
+            data+= "    font-size: 1.2em;";
+            data+= "    font-weight: 300;";
+            data+= "    line-height: 2em;";
+            data+= "}";
+            data+= "p{";
+            data+= "    font-size: .7em;";
+            data+= "    color: #000;";
+            data+= "    line-height: 1.2em;";
+            data+= "}";
+            data+= ".left{";
+            data+= "    text-align: left;";
+            data+= "    font-size: 12px;";
+            data+= "    margin-bottom: 10px;";
+            data+= "    margin-top: 15px;";
+            data+= "}";
+            data+= "div *{font-size: 11px !important;}";
+            data+= ".flex{display:flex; margin-bottom: 5px;}";
+            data+= ".underline{border-bottom: 1px solid black; width: 50%;}";
+            data+= ".padl50{padding-left: 20px; min-width: 30%; font-size: 12px;}";
+            data+= "#top, #mid,#bot{";
+            data+= "    border-bottom: 1px dotted #000;";
+            data+= "}";
+            data+= "#top{";
+            data+= "    min-height: 100px;";
+            data+= "    text-align: center;";
+            data+= "}";
+            data+= "#mid{min-height: 80px;}";
+            data+= "#bot{ min-height: 50px;}";
+            data+= "#top .logo{";
+            data+= "    height: 60px;";
+            data+= "    width: 60px;";
+            data+= "    background-size: 60px 60px;";
+            data+= "}";
+            data+= ".clientlogo{";
+            data+= "    float: left;";
+            data+= "    height: 60px;";
+            data+= "    width: 60px;";
+            data+= "    background-size: 60px 60px;";
+            data+= "    border-radius: 50px;";
+            data+= "}";
+            data+= ".info{";
+            data+= "    display: block;";
+            data+= "    margin-left: 0;";
+            data+= "}";
+            data+= ".info p{";
+            data+= "    margin: 0;";
+            data+= "    padding: 0 2px;";
+            data+= "}";
+            data+= ".title{float: right;}";
+            data+= ".title p{text-align: right;}";
+            data+= "table{";
+            data+= "    width: 100%;";
+            data+= "    border-collapse: collapse;";
+            data+= "}";
+            data+= ".tabletitle{font-size: .5em;}";
+            data+= ".items-table-label{border-bottom:solid 1px #000;}";
+            data+= "#mid, .mid2{padding: 5px 0px;}";
+            data+= ".mid2, .service{border-bottom: 1px dotted #000;}";
+            data+= ".item{width: 24mm;}";
+            data+= ".itemtext{";
+            data+= "    font-size: .5em;";
+            data+= "    margin-bottom:0;";
+            data+= "    display: inline-block;";
+            data+= "}";
+            data+= ".option-item{";
+            data+= "    font-size: .5em;";
+            data+= "    font-style: italic;";
+            data+= "    display: block;";
+            data+= "    color: #000;";
+            data+= "}";
+            data+= "tr.service td{padding: 0px;  }";
+            data+= "#legalcopy{";
+            data+= "    margin-top: 30px;";
+            data+= "}";
+            data+= ".strong td:first-child{font-weight: 600;}";
+            data+= ".topline{border-top: 1px dotted black; margin-top: 15px;}";
+            data+= ".right{text-align: right}";
+            data+= "tr,td{border:0px !important;}";
+            data+= ".item-qty, td.qty{width: 10%; text-align: center;}";
+            data+= ".item-name,td.items{width: 65%;}";
+            data+= ".item-price, td.price{width: 30%;}";
+            data+= ".item-total, td.total{width: 30% ;text-align: right;}";
+            data+= ".margin10{margin:30px 0px 10px 0px !important;}";
+            data+= "  </style>";
+            data+= " </head>";
+            data+= " <body>";
+            data+= "  <div id='top'>";
+            data+= "                <div class='addr'><strong><span style='font-size: 13px !important; line-height:20px;'>weissbrau</span></strong><br>Address :  Bukit Bintang, 55100 Kuala Lumpur, Federal Territory of Kuala Lumpur, Malaysia</div>";
+            data+= "    BRN: 1006023-T<br>";
+            data+= "    TAX INVOICE NO. : 20551006<br>";
+            data+= "                <div class='info'>";
+            data+= "                </div>";
+            data+= "    <div class='left'>Cashier   : weissbrau </div>";
+            data+= "    </div>";
+            data+= "    <div class='mid2'>";
+            data+= "        <div class='flex' style='justify-content: space-between;'><div>TABLE 3</div><div>PAX 3</div></div>";
+            data+= "    </div>";
+            data+= "    <div id='mid'>";
+            data+= "                <div class='info'>";
+            data+= "                </div>";
+            data+= "                <div class='payment-details'>";
+            data+= "                </div>";
+            data+= "    </div>";
+            data+= "";
+            data+= "";
+            data+= "    <table>";
+            data+= "        <tr class='service'>";
+            data+= "            <td class='tableitem item-qty'><span class='itemtext'>1</span></td>";
+            data+= "            <td class='tableitem item-name'>";
+            data+= "                <strong><span class='itemtext'>ACQUA PANNA 1000ML</span></strong>";
+            data+= "            </td>";
+            data+= "            <td class='tableitem item-price'><span class='itemtext'>26.00</span></td>";
+            data+= "            <td class='tableitem item-total'><span class='itemtext'>26.00</span></td>";
+            data+= "        </tr>";
+            data+= "        <br>";
+            data+= "        <tr class='tabletitle strong'>";
+            data+= "            <td class='Rate sub-total-title' style='text-align:right;padding-right:5px; padding-top: 15px;'  colspan='3'>Sub Total</td>";
+            data+= "            <td class='payment sub-total-amount right' style='padding-top: 15px;'>76.00</td>";
+            data+= "        </tr>";
+            data+= "        <tr class='tabletitle strong'>";
+            data+= "                <td class='Rate tax-title' style='text-align:right;padding-right:5px;' colspan='3'>Discounts</td>";
+            data+= "                <td class='payment cart-discount-amount right'>0.00</td>";
+            data+= "        </tr>";
+            data+= "        <tr class='tabletitle strong'>";
+            data+= "            <td class='Rate tax-title' style='text-align:right;padding-right:5px;' colspan='3'>Tax</td>";
+            data+= "            <td class='payment tax-amount right'>12.62</td>";
+            data+= "        </tr>";
+            data+= "        <tr class='tabletitle strong'>";
+            data+= "            <td class='Rate grand-total-title' style='text-align:right;padding-right:5px;'  colspan='3'>Grand Total</td>";
+            data+= "            <td class='payment grand-total-amount right'>88.60</td>";
+            data+= "        </tr>";
+            data+= "";
+            data+= "        <tr class='tabletitle strong'>";
+            data+= "            <td class='Rate grand-total-title' style='text-align:right;padding-right:5px;'  colspan='3'>Customer Paid</td>";
+            data+= "            <td class='payment grand-total-amount right'>88.60</td>";
+            data+= "        </tr>";
+            data+= "    </table>";
+            data+= "    <div class='topline'>";
+            data+= "        <div class='flex margin10'>";
+            data+= "            <div class='padl50'>Name : </div><div class='underline'></div>";
+            data+= "        </div>";
+            data+= "        <div class='flex margin10'>";
+            data+= "        <div class='padl50'>Signature : </div><div class='underline'></div>";
+            data+= "        </div>";
+            data+= "    </div>";
+            data+= "    <div id='legalcopy' class='right'>";
+            data+= "        <p class='legal'><strong>THANK YOU</p>";
+            data+= "    </div>";
+            data+= " </body>";
+            data+= " </HTML>";*/
+
+            return data;
+        };
+
+
+        // SLCS ltem Label 1 generation
+        var imgData = '';
+        getSLCSLabel1Sample = function(cut, image){
+            var data = '';
+            var NL = '\n';
+            var itemId = '1234567890';
+            var itemOrderHHMM = '11:30';
+            var itemOrderNo = '8819';
+            var itemName = 'Original PMT -R';
+            var itemOption = 'Half Sugar';
+            var itemQnty = '1/1';
+            var itemCost = '6.50';
+
+            data+= "SM0,0" + NL; //Set Margin
+            data+= "STd" + NL; //Set Printing Type. d : Direct Thermal(용지 직접 감열)
+            data+= "SF1" + NL; //SF (Set Back-Feed Option). 1 : Back-feed 실시(디폴트)
+            data+= "SA0" + NL; //Offset 설정. Black Mark(or Gap) 와 절취선[dots] 간에 Offset 길이 저장(설정)
+            data+= "TA0" + NL; //Tear-off/Cut 설정. 인쇄후 라벨 절취 위치를 조정
+            data+= "SL559,24,G" + NL; //Set Length. 600dots=70mm=3inch //길이:559dots, Gap길이:24dots, Gap용지
+            data+= "SOT" + NL; //SO (Set Orientation). T : top 에서 bottom 방향으로 인쇄 (default)c
+            data+= "SW400" + NL; //Set Width. 400dots=50mm=2inch
+            data+= "B1197,104,1,4,12,80,1,0,'" + itemId + "'" + NL; //B1 (1차원 바코드 - 선형바코드)
+            data+= "V108,278,K,27,27,0,N,N,N,1,C,0,'" + itemId + "'" + NL; //V (문자열 Vector 폰트).
+            data+= "V357,42,K,34,34,0,N,N,N,1,L,0,'" + itemOrderHHMM + "'" + NL;
+            data+= "V362,404,K,44,44,0,B,N,N,1,L,0,'" + itemOrderNo + "'" + NL;
+            data+= "V315,44,K,34,34,0,N,N,N,1,L,0,'" + itemName + "'" + NL;
+            data+= "V279,44,K,34,34,0,N,N,N,1,L,0,'" + itemOption + "'" + NL;
+            data+= "V78,44,K,34,34,0,N,N,N,1,L,0,'" + itemQnty + "'" + NL;
+            data+= "V78,446,K,34,34,0,N,N,N,1,L,0,'" + itemCost + "'" + NL;
+
+            // cut the ticket
+            if (cut) data+= "CUTy" + NL;
+            else data+= "CUTn" + NL;
+
+            data+= "P1" + NL; //P (Print). 라벨 세트 수: 1 ~ 65535
+
+            console.log(data);
+            return data;
+        };
+
+        // SLCS ltem Label 2 generation
+        var imgData = '';
+        getSLCSLabel2Sample = function(cut, image){
+            var data = '';
+            var NL = '\n';
+            var itemId = '1234567890';
+            var itemOrderHHMM = '1:02 PM';
+            var itemOrderNo = '1071';
+            var itemName = 'Karson';
+            var itemOption1 = 'Kop1 KK (L)';
+            var itemQnty = '1/2';
+            var itemOption2 = 'Use Cup, Half - 50% Sugar';
+            var itemEtc= '******* Thanks *******';
+
+            data+= "SM0,0" + NL; //Set Margin
+            data+= "STd" + NL;
+            data+= "SF1" + NL;
+            data+= "SA0" + NL;
+            data+= "TA0" + NL;
+            data+= "SL559,24,G" + NL; //Set Length
+            data+= "SOT" + NL;
+            data+= "SW400" + NL; //Set Width
+            data+= "B1137,104,1,4,12,79,1,0,'" + itemId + "'" + NL;
+            data+= "V49,278,K,27,27,0,N,N,N,1,C,0,'" + itemId + "'" + NL;
+            data+= "V336,404,K,27,27,0,N,N,N,1,L,0,'" + itemOrderHHMM + "'" + NL;
+            data+= "V381,404,K,44,44,0,B,N,N,1,L,0,'" + itemOrderNo + "'" + NL;
+            data+= "V334,44,K,34,34,0,N,N,N,1,L,0,'" + itemName + "'" + NL;
+            data+= "V298,44,K,34,34,0,N,N,N,1,L,0,'" + itemOption1 + "'" + NL;
+            data+= "V376,42,K,34,34,0,N,N,N,1,L,0,'" + itemQnty + "'" + NL;
+            data+= "V239,283,K,34,34,0,N,N,N,1,C,0,'" + itemOption2 + "'" + NL;
+            data+= "V203,283,K,34,34,0,N,N,N,1,C,0,'" + itemEtc + "'" + NL;
+
+            // cut the ticket
+            if (cut) data+= "CUTy" + NL;
+            else data+= "CUTn" + NL;
+
+            data+= "P1" + NL;
+
+            console.log(data);
+            return data;
+        };
+
+        // SLCS Item barcode generation
+        var imgData = '';
+        getSLCSBarcodeSample = function(cut, image){
+            var data = '';
+            var NL = '\n';
+            var itemId = '6832';
+            var itemName = 'MIXED OF 3 REGULAR WITH 2 CHOCOJAR';
+            var itemCost = 'RM23.80';
+            var itemCategory = 'FOOD->DONUT';
+            var itemSubCategory = 'BEVERAGE->abc->Testsubcat002->Testsubcat002_sub001';
+
+            data+= "SM0,0" + NL; //Set Margin
+            data+= "STd" + NL;
+            data+= "SF1" + NL;
+            data+= "SA0" + NL;
+            data+= "TA0" + NL;
+            data+= "SL559,24,G" + NL; //Set Length
+            data+= "SOT" + NL;
+            data+= "SW400" + NL; //Set Width
+            data+= "B1241,55,1,8,24,64,1,0,'" + itemId + "'" + NL;
+            data+= "V167,274,K,34,34,0,N,N,N,1,C,0,'" + itemId + "'" + NL;
+            data+= "V355,280,K,25,25,0,N,N,N,1,C,0,'" + itemName + "'" + NL;
+            data+= "V313,280,K,25,25,0,N,N,N,1,C,0,'" + itemCost + "'" + NL;
+            data+= "V82,279,K,17,17,0,N,N,N,1,C,0,'" + itemCategory + "'" + NL;
+            data+= "V62,279,K,17,17,0,N,N,N,1,C,0,'" + itemSubCategory + "'" + NL;
+
+            // cut the ticket
+            if (cut) data+= "CUTy" + NL;
+            else data+= "CUTn" + NL;
+
+            data+= "P1" + NL;
+
+            console.log(data);
+            return data;
+        };
+
     </script>
 </head>
 <body>
@@ -222,6 +546,10 @@
         <button onclick="webprint.requestPrinters();">Refresh</button><br/>
         <button onclick="webprint.printRaw(esc_init+esc_p+esc_init, $('#printerlist').val());">Cash Draw</button><br/>
         <button onclick="webprint.printRaw(getEscSample($('#cutter').is(':checked'),$('#image').is(':checked')), $('#printerlist').val());">Print</button><br/>
+        <button onclick="webprint.printHtml(getHtmlSample($('#cutter').is(':checked'),$('#image').is(':checked')), $('#printerlist').val(), {width:80, height:297, leftMargin:0, rightMargin:0, topMargin:0, bottomMargin:0});">PrintHtml</button><br/>
+        <button onclick="webprint.printRaw(getSLCSLabel1Sample($('#cutter').is(':checked'),$('#image').is(':checked')), $('#printerlist').val());">Print (Label1)</button><br/>
+        <button onclick="webprint.printRaw(getSLCSLabel2Sample($('#cutter').is(':checked'),$('#image').is(':checked')), $('#printerlist').val());">Print (Label2)</button><br/>
+        <button onclick="webprint.printRaw(getSLCSBarcodeSample($('#cutter').is(':checked'),$('#image').is(':checked')), $('#printerlist').val());">Print (Barcode)</button><br/>
     </p>
 
     <h4>Serial Printing</h4>
@@ -234,7 +562,7 @@
 
     <h4>Network Printing:</h4>
     <p>
-        Host: <input id="tcphost" type="text" value="192.168.1.87" /> Port <input id="tcpport" type="text" size="5" value="9100" />
+        Host: <input id="tcphost" type="text" value="192.168.0.194" /> Port <input id="tcpport" type="text" size="5" value="9100" />
         <button onclick="webprint.printTcp(esc_init+esc_p+esc_init, $('#tcphost').val()+':'+$('#tcpport').val());">Cash Draw</button><br/>
         <button onclick="webprint.printTcp(getEscSample($('#cutter').is(':checked'),$('#image').is(':checked')), $('#tcphost').val()+':'+$('#tcpport').val());">Print Network</button><br/>
     </p>

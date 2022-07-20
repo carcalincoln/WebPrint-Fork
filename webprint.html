@@ -1,0 +1,648 @@
+<!--
+* This file is part of WebPrint
+* 
+* @author Michael Wallace
+*
+* Copyright (C) 2015 Michael Wallace, WallaceIT
+*
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the GNU Lesser General Public License
+* (LGPL) version 2.1 which accompanies this distribution, and is available at
+* http://www.gnu.org/licenses/lgpl-2.1.html
+*
+* This software is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+* Lesser General Public License for more details.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebPrint ESC/P Example</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--<script src="//code.jquery.com/jquery-2.1.4.min.js"></script>-->
+    <script src="js/jquery-2.1.4.min.js"></script>
+    <script src="js/webprint.js"></script>
+    <!--<script src="base64.js"></script>-->
+
+    <script src="js/codepage-encoder.js"></script>
+    <script src="js/linewrap.js"></script>
+    <script src="js/canvas-dither.js"></script>
+    <script src="js/canvas-flatten.js"></script>
+    <script src="js/esc-pos-encoder.js"></script>
+
+    <script>
+        var populatePrinters = function(printers){
+            var printerlist = $("#printerlist");
+            printerlist.html('');
+            for (var i in printers){
+                printerlist.append('<option value="'+printers[i]+'">'+printers[i]+'</option>');
+            }
+        };
+        var populatePorts = function(ports){
+            var portlist = $("#portlist");
+            portlist.html('');
+            for (var i in ports){
+                portlist.append('<option value="'+ports[i]+'">'+ports[i]+'</option>');
+            }
+            if ($("#portlist option").length)
+                webprint.openPort($("#portlist option:first-child").val(), {baud:"9600", databits:"8", stopbits:"1", parity:"1", flow:"none"});
+        };
+
+        //숨김영역방식으로 처리하기 위해 호출은 로딩이 완료된 후에 처리한다.
+        $(function() {
+            webprint = new WebPrint(true, {
+                relayHost: "127.0.0.1",
+                relayPort: "8080",
+                listPrinterCallback: populatePrinters,
+                listPortsCallback: populatePorts,
+                readyCallback: function(){
+                    webprint.requestPorts();
+                    webprint.requestPrinters();
+                }
+            });
+        });
+
+        /*setInterval(function() {
+            webprint.requestPrinters();
+            console.log("webprint.requestPrinters()");
+        }, 1000);*/
+
+        // ESC/P receipt generation
+        getEscSample = function(cut, image){
+            var data = '';
+            var result;
+            var maxlen = 42;
+            var encoder = new EscPosEncoder({});
+
+            result = encoder
+                .initialize()
+                .align('center')
+                .raw([ 0x1b, 0x21, 0x31 ])
+                .line('weissbrau')
+                .raw([ 0x1b, 0x21, 0x02 ])
+                .newline()
+                .size('small')
+                .line('Address : Bukit Bintang, 55100 Kuala Lumpur, Federal')
+                .line('Territory of Kuala Lumpur, Malaysia')
+                .initialize() // 아래 오류 해결 !!!
+                .align('center') // 아래 오류 해결 !!!
+                .size('normal') // 85mm 프린터에서 여기부터 끝까지 출력 안 되는 오류 *****
+                .line('BRN : ' + '1006023-T')
+                .line('TAX INVOICE NO. : ' + '20551006')
+                .newline()
+                .align('left')
+                .line('Cashier : ' + 'weissbrau')
+                .text('-'.repeat(maxlen))
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            result = encoder
+                .table(
+                    [
+                        { width: 20, marginRight: 2, align: 'left' },
+                        { width: 20, align: 'right' }
+                    ],
+                    [
+                        [ 'TABLE '+'10', 'PAX '+'300' ],
+                    ]
+                )
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            result = encoder
+                .align('right')
+                .line('2021. 12. 2. AM 11:40:41')
+                .align('left')
+                .text('-'.repeat(maxlen))
+                .align('left')
+                .line('Customer : ' + 'king')
+                .newline()
+                .line('   * Cash : ' + '55.97')
+                .line('   * Return : ' + '55.97')
+                .newline()
+                .line('Shipping method : ' + 'method')
+                .line('Shipping name : ' + 'name')
+                .line('Shipping address : ' + 'address')
+                .line('Shipping address 2 : ' + 'address_2')
+                .line('Shipping city : ' + 'city')
+                .line('Shipping postcode : ' + 'postcode')
+                .line('Shipping state : ' + 'state')
+                .text('-'.repeat(maxlen))
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            result = encoder
+                .table(
+                    [
+                        { width: 3, marginRight: 0, align: 'left' },
+                        { width: 19, align: 'left' },
+                        { width: 10, align: 'right' },
+                        { width: 10, align: 'right' }
+                    ],
+                    [
+                        [ '1', 'ACQUA PANNA', '@ 26.00', '26.00' ],
+                        [ '2', 'APPOGATO', '@ 980.00', '980.00' ],
+                        [ '1', 'CAPPUCCINO', '@ 14.00', '14.00' ],
+                    ]
+                )
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            result = encoder
+                .table(
+                    [
+                        { width: 30, marginRight: 2, align: 'right' },
+                        { width: 10, align: 'right' }
+                    ],
+                    [
+                        [ 'Sub Total', '76.00' ],
+                        [ 'Discounts', '0.00' ],
+                        [ 'Tax', '12.62' ],
+                        [ 'Grand Total', (encoder) => encoder.bold().text('988.60').bold() ],
+                        [ 'Customer Paid', '988.60' ],
+                    ]
+                )
+                .text('-'.repeat(maxlen))
+                .newline()
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            result = encoder
+                .table(
+                    [
+                        { width: 13, marginLeft: 3, align: 'left' },
+                        { width: 21, align: 'center' }
+                    ],
+                    [
+                        [ 'Name :  ', (encoder) => encoder.text('_'.repeat(21)) ],
+                    ]
+                )
+                .newline()
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            result = encoder
+                .table(
+                    [
+                        { width: 13, marginLeft: 3, align: 'left' },
+                        { width: 21, align: 'center' }
+                    ],
+                    [
+                        [ 'Signature :  ', (encoder) => encoder.text('_'.repeat(21)) ],
+                    ]
+                )
+                .newline()
+                .newline()
+                .align('right')
+                .bold()
+                .text('THANK YOU')
+                .bold()
+                .newline()
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            // cut the ticket
+            if (cut) {
+                result = encoder
+                    .newline()
+                    .newline()
+                    .newline()
+                    .newline()
+                    .cut()
+                    .newline()
+                    .encode();
+                result = new TextDecoder().decode(result);
+                console.log(result);
+                data += result;
+            }
+
+            return data;
+        };
+
+        // ESC/P receipt generation - kitchen docket
+        getEscSample2 = function(cut, image){
+            var data = '';
+            var result;
+            var maxlen = 42;
+            var encoder = new EscPosEncoder({});
+
+            result = encoder
+                .initialize()
+                .newline()
+                .newline()
+                .newline()
+                .newline()
+                .align('center')
+                .raw([ 0x1b, 0x21, 0x31 ])
+                .line('TABLE '+'10')
+                .raw([ 0x1b, 0x21, 0x02 ])
+                .newline()
+                /*.raw([ 0x1b, 0x21, 0x31 ])
+                .line('note')
+                .raw([ 0x1b, 0x21, 0x02 ])
+                .newline()*/
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            result = encoder
+                .table(
+                    [
+                        { width: 19, align: 'left' },
+                        { width: 5, align: 'left' },
+                        { width: 8, align: 'left' },
+                        { width: 10, align: 'left' }
+                    ],
+                    [
+                        [ (encoder) => encoder.bold().text('Item').bold(), (encoder) => encoder.bold().text('Qty').bold(), (encoder) => encoder.bold().text('Time').bold(), (encoder) => encoder.bold().text('Seller').bold() ],
+                        [ '='.repeat(19), '='.repeat(5), '='.repeat(8), '='.repeat(10) ],
+                        [ 'ACQUA PANNA - new\n 1000ML', '1', '12:42', 'weissbrau' ],
+                        [ '-'.repeat(19), '-'.repeat(5), '-'.repeat(8), '-'.repeat(10) ],
+                        //[ 'APPOGATO - new', '2', '12:44', 'weissbrau' ],
+                        [ 'APPOGATO APPOGATO APPOGATO APPOGATO APPOGATO APPOGATO APPOGATO APPOGATO APPOGATO APPOGATO', '2', '12:44', 'weissbrau' ],
+                        [(encoder) => encoder.text('APPOGATO APPOGATO APPOGATO APPOGATO APPOGATO APPOGATO APPOGATO APPOGATO APPOGATO APPOGATO'), '2', '12:44', 'weissbrau' ],
+                        [ 'APPOGATO - new0 - new0 - new0 - new0 - new0 - new0 - new0 - new0 - new0 - new0 - new0', '2', '12:44', 'weissbrau' ],
+                        [(encoder) => encoder.text('APPOGATO - new - new - new - new - new - new - new - new - new - new - new'), '2', '12:44', 'weissbrau' ],
+                        [ '-'.repeat(19), '-'.repeat(5), '-'.repeat(8), '-'.repeat(10) ],
+                        [ 'CAPPUCCINO - new', '1', '14:39', 'weissbrau' ],
+                        [ '-'.repeat(19), '-'.repeat(5), '-'.repeat(8), '-'.repeat(10) ],
+                    ]
+                )
+                .newline()
+                .newline()
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            // cut the ticket
+            if (cut) {
+                result = encoder
+                    .newline()
+                    .newline()
+                    .newline()
+                    .newline()
+                    .cut()
+                    .newline()
+                    .encode();
+                result = new TextDecoder().decode(result);
+                console.log(result);
+                data += result;
+            }
+
+            return data;
+        };
+
+        // EOD
+        getEscSample3 = function(cut, image){
+            var data = '';
+            var result;
+            var maxlen = 42;
+            var encoder = new EscPosEncoder({
+                codepageMapping: 'epson' });
+
+            //END OF THE DAY REPORT
+            result = encoder
+                .initialize()
+                .align('center')
+                .raw([ 0x1b, 0x21, 0x31 ])
+                .line('END OF THE DAY REPORT')
+                .raw([ 0x1b, 0x21, 0x02 ])
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+            //Price 2 column Table
+            result = encoder
+                .table(
+                    [
+                        { width: maxlen-10, align: 'left' },
+                        { width: 10, align: 'right' }
+                    ],
+                    [
+                        [ 'NET SALES', '424' ],
+                        [ 'SERVICE', '39.4' ],
+                        [ '-'.repeat(maxlen-10), '-'.repeat(10) ],
+                        [ 'SUB TOTAL', '463.4' ],
+                        [ 'TAX', '25.44' ],
+                        [ '-'.repeat(maxlen-10), '-'.repeat(10) ],
+                        [ 'COLLECTION TOTAL', '488.84' ],
+                    ]
+                )
+                .newline()
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            //SALES DETAIL
+            result = encoder
+                .text('='.repeat(maxlen))
+                .align('center')
+                .raw([ 0x1b, 0x21, 0x31 ])
+                .line('SALES DETAIL')
+                .raw([ 0x1b, 0x21, 0x02 ])
+                .text('='.repeat(maxlen))
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+            //Price 3 column Table
+            result = encoder
+                .table(
+                    [
+                        { width: maxlen-25, align: 'left' },
+                        { width: 15, align: 'right' },
+                        { width: 10, align: 'right' }
+                    ],
+                    [
+                        [ 'BEVERAGE', '68.92%', '306' ],
+                        [ 'FOOD', '31.08%', '138' ],
+                        [ 'RETAIL', '0%', '0' ],
+                        [ 'TOBACCO', '0%', '0' ],
+                        [ 'OTHERS', '0%', '0' ],
+                        [ 'GROSS SALES', '', '444' ],
+                        [ 'DISCOUNT', '', '(20)' ],
+                        [ '-'.repeat(maxlen-25), '-'.repeat(15), '-'.repeat(10) ],
+                        [ 'NET SALES', '', '424' ],
+                    ]
+                )
+                .newline()
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            //COLLECTION DETAIL
+            result = encoder
+                .text('='.repeat(maxlen))
+                .align('center')
+                .raw([ 0x1b, 0x21, 0x31 ])
+                .line('COLLECTION DETAIL')
+                .raw([ 0x1b, 0x21, 0x02 ])
+                .text('='.repeat(maxlen))
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+            //Price 3 column Table
+            result = encoder
+                .table(
+                    [
+                        { width: maxlen-25, align: 'left' },
+                        { width: 15, align: 'right' },
+                        { width: 10, align: 'right' }
+                    ],
+                    [
+                        [ 'CASH', '69.4%', '339.25' ],
+                        [ 'VISA', '12.39%', '60.55' ],
+                        [ 'Master', '5.7%', '27.85' ],
+                        [ 'AMEX', '3.65%', '17.85' ],
+                        [ 'Union Pay', '3.17%', '15.5' ],
+                        [ 'Allpay', '0%', '0' ],
+                        [ 'Fave Pay', '0%', '0' ],
+                        [ 'MBB QR pay', '0%', '0' ],
+                        [ 'GRAB', '0%', '0' ],
+                        [ 'Food Panda', '0%', '0' ],
+                        [ 'Airasia Food', '0%', '0' ],
+                        [ 'ETC', '0%', '0' ],
+                        [ '-'.repeat(maxlen-25), '-'.repeat(15), '-'.repeat(10) ],
+                        [ 'COLLECTION TOTAL', '', '488.84' ],
+                    ]
+                )
+                .newline()
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            //CASH CONTROL
+            result = encoder
+                .text('='.repeat(maxlen))
+                .align('center')
+                .raw([ 0x1b, 0x21, 0x31 ])
+                .line('CASH CONTROL')
+                .raw([ 0x1b, 0x21, 0x02 ])
+                .text('='.repeat(maxlen))
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+            //Price 2 column Table
+            result = encoder
+                .table(
+                    [
+                        { width: maxlen-10, align: 'left' },
+                        { width: 10, align: 'right' }
+                    ],
+                    [
+                        [ 'GROSS SALES', '339.25' ],
+                        [ 'PETTY CASH', '0' ],
+                        [ '-'.repeat(maxlen-10), '-'.repeat(10) ],
+                        [ 'CASH ON HAND', '339.25' ],
+                    ]
+                )
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            //EOD DETAIL REPORT
+            result = encoder
+                .newline()
+                .text('*'.repeat(maxlen))
+                .align('center')
+                .raw([ 0x1b, 0x21, 0x31 ])
+                .line('EOD DETAIL REPORT')
+                .raw([ 0x1b, 0x21, 0x02 ])
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+            //Price 3 column Table
+            result = encoder
+                .table(
+                    [
+                        { width: maxlen-25, align: 'left' },
+                        { width: 15, align: 'right' },
+                        { width: 10, align: 'right' }
+                    ],
+                    [
+                        [ (encoder) => encoder.bold().text('BEVERAGE').bold(), '68.92%', '306' ],
+                        [ '-'.repeat(maxlen-25), '-'.repeat(15), '-'.repeat(10) ],
+                        [ 'DRAUGHT BEER', '100%', '306' ],
+                        [ '', '', '' ],
+                        [ (encoder) => encoder.bold().text('FOOD').bold(), '31.08%', '138' ],
+                        [ '-'.repeat(maxlen-25), '-'.repeat(15), '-'.repeat(10) ],
+                        [ 'GERMAN EIERNUDELN', '34.78%', '48' ],
+                        [ 'ROESTIZZA', '65.22%', '90' ],
+                        [ '', '', '' ],
+                        [ (encoder) => encoder.bold().text('RETAIL').bold(), '0%', '0' ],
+                        [ '-'.repeat(maxlen-25), '-'.repeat(15), '-'.repeat(10) ],
+                        [ '', '', '' ],
+                        [ (encoder) => encoder.bold().text('TOBACCO').bold(), '0%', '0' ],
+                        [ '-'.repeat(maxlen-25), '-'.repeat(15), '-'.repeat(10) ],
+                        [ '', '', '' ],
+                        [ (encoder) => encoder.bold().text('OTHERS').bold(), '0%', '0' ],
+                        [ '-'.repeat(maxlen-25), '-'.repeat(15), '-'.repeat(10) ],
+                        [ '', '', '' ],
+                    ]
+                )
+                .newline()
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+            //Price 2 column Table
+            result = encoder
+                .table(
+                    [
+                        { width: maxlen-10, align: 'left' },
+                        { width: 10, align: 'right' }
+                    ],
+                    [
+                        [ 'CHK TOTAL', '9' ],
+                        [ 'SALES / CHK', '47.11' ],
+                        [ '', '' ],
+                        [ 'GUEST TOTAL', '12' ],
+                        [ 'AVG GUEST / CHK', '1.33' ],
+                        [ 'SALES / GUEST', '35.33' ],
+                    ]
+                )
+                .newline()
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log(result);
+            data += result;
+
+
+            // cut the ticket
+            if (cut) {
+                result = encoder
+                    .newline()
+                    .newline()
+                    .newline()
+                    .newline()
+                    .cut()
+                    .newline()
+                    .encode();
+                result = new TextDecoder().decode(result);
+                console.log(result);
+                data += result;
+            }
+
+            return data;
+        };
+
+        /**
+         * @return {string}
+         */
+        function ArrayToByteStr(array) {
+            var s = '';
+            for (var i = 0; i < array.length; i++) {
+                s += String.fromCharCode(array[i]);
+            }
+            return s;
+        }
+
+        /**
+         * ESC/P open CashDrawer - Pulse
+         *
+         * @param  {number}          device  0 or 1 for on which pin the device is connected, default of 0
+         * @param  {number}          on      Time the pulse is on in milliseconds, default of 100
+         * @param  {number}          off     Time the pulse is off in milliseconds, default of 500
+         * @return {object}                  Return the object, for easy chaining commands
+         *
+         */
+        openCashDrawer = function(device, on, off){
+            var data = '';
+            var result;
+            var encoder = new EscPosEncoder({});
+
+            result = encoder
+                .initialize()
+                .pulse(device, on, off)
+                .encode();
+            result = new TextDecoder().decode(result);
+            console.log('openCashDrawer ::: ' + result);
+            data += result;
+
+            return data;
+        };
+
+    </script>
+</head>
+<body>
+<div>
+    <h3>Webprint Demo</h3>
+    <p>
+        This example shows how you can use webprint to print to ESC/P printers.
+    </p>
+
+    <h4>USB & OS installed printers</h4>
+    <p>
+        Printers: <select id="printerlist"></select>
+        <button onclick="webprint.requestPrinters();">Refresh</button><br/>
+        <button onclick="webprint.printRaw(getEscSample($('#cutter').is(':checked'),$('#image').is(':checked')), $('#printerlist').val());">Print (Counter)</button><br/>
+        <button onclick="webprint.printRaw(getEscSample2($('#cutter').is(':checked'),$('#image').is(':checked')), $('#printerlist').val());">Print (Kitchen)</button><br/>
+        <button onclick="webprint.printRaw(getEscSample3($('#cutter').is(':checked'),$('#image').is(':checked')), $('#printerlist').val());">Print (EOD)</button><br/>
+    </p>
+
+    <h4>Serial Printing</h4>
+    <p>
+        Ports: <select onchange='webprint.openPort($("#portlist").val(), {baud:"9600", databits:"8", stopbits:"1", parity:"1", flow:"none"});' id="portlist"></select>
+        <button onclick="webprint.requestPorts();">Refresh</button><br/>
+        <button onclick="webprint.printSerial(getEscSample2($('#cutter').is(':checked'),$('#image').is(':checked')), $('#portlist').val());">Print Serial (Kitchen)</button><br/>
+    </p>
+
+    <h4>Network Printing:</h4>
+    <p>
+        Host: <input id="tcphost" type="text" value="192.168.0.194" /> Port <input id="tcpport" type="text" size="5" value="9100" />
+        <button onclick="webprint.printTcp(openCashDrawer(0,100,100), $('#tcphost').val()+':'+$('#tcpport').val());">Cash Draw</button><br/>
+        <button onclick="webprint.printTcp(getEscSample($('#cutter').is(':checked'),$('#image').is(':checked')), $('#tcphost').val()+':'+$('#tcpport').val());">Print Network (Counter)</button><br/>
+        <button onclick="webprint.printTcp(getEscSample2($('#cutter').is(':checked'),$('#image').is(':checked')), $('#tcphost').val()+':'+$('#tcpport').val());">Print Network (Kitchen)</button><br/>
+        <button onclick="webprint.printTcp(getEscSample2($('#cutter').is(':checked'),$('#image').is(':checked')), '192.168.0.193:'+$('#tcpport').val()); webprint.printTcp(getEscSample2($('#cutter').is(':checked'),$('#image').is(':checked')), '192.168.0.194:'+$('#tcpport').val());">Print Network (Kitchen 193,194)</button><br/>
+        <button onclick="webprint.printTcp(getEscSample3($('#cutter').is(':checked'),$('#image').is(':checked')), $('#tcphost').val()+':'+$('#tcpport').val());">Print Network (EOD)</button><br/>
+    </p>
+
+    <h4>Print Options</h4>
+    <p>
+        Cutter: <input id="cutter" type="checkbox" checked="checked"/><br/>
+        Image: <input id="image" type="checkbox" />
+    </p>
+</div>
+</body>
+</html>
