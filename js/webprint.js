@@ -114,11 +114,14 @@ var WebPrint = function (init, opt) {
         wpready = false;
         if($("#ifmWebPrint").length > 0){
             var ifm = $("#ifmWebPrint").attr("src", "http://"+options.relayHost+":"+options.relayPort+"/printwindow");
-
-            ifm.load(function(){
+            ifm.on('load', function() {
                 console.log("reload print...");
                 wpwindow =  document.getElementById( 'ifmWebPrint' ).contentWindow;
             });
+            /*ifm.load(function(){
+                console.log("reload print...");
+                wpwindow =  document.getElementById( 'ifmWebPrint' ).contentWindow;
+            });*/
         }else{
             var ifm = $("<iframe>").attr({
                 "id": "ifmWebPrint",
